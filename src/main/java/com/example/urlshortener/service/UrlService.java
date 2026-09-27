@@ -2,6 +2,8 @@ package com.example.urlshortener.service;
 
 import com.example.urlshortener.entity.UrlMapping;
 import com.example.urlshortener.repository.UrlRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,38 +17,52 @@ public class UrlService {
         this.urlRepository = urlRepository;
     }
 
-    public String encode(Integer id) {
-        if (id == 0) return String.valueOf(ALPHABET.charAt(0));
-
-        StringBuilder shortUrl = new StringBuilder();
-        while (id > 0) {
-            int remainder = id % BASE;
-            shortUrl.append(ALPHABET.charAt(remainder));
-            id = id / BASE;
+    // CHANGED TO PUBLIC: Base62 Encoding logic so tests can access it
+    public String encode(int id) {
+        if (id == 0) {
+            return String.valueOf(ALPHABET.charAt(0));
         }
-        return shortUrl.reverse().toString();
+        StringBuilder sb = new StringBuilder();
+        while (id > 0) {
+            sb.append(ALPHABET.charAt(id % BASE));
+            id /= BASE;
+        }
+        return sb.reverse().toString();
     }
 
-    public Integer decode(String shortUrl) {
+    // CHANGED TO PUBLIC: Base62 Decoding logic so tests can access it
+    public Integer decode(String str) {
         int id = 0;
-        for (int i = 0; i < shortUrl.length(); i++) {
-            char c = shortUrl.charAt(i);
-            int value = ALPHABET.indexOf(c);
-            id = (id * BASE) + value;
+        for (int i = 0; i < str.length(); i++) {
+            id = id * BASE + ALPHABET.indexOf(str.charAt(i));
         }
         return id;
     }
 
     public String shortenUrl(String longUrl) {
-        UrlMapping newUrl = new UrlMapping(longUrl);
-        UrlMapping savedUrl = urlRepository.save(newUrl);
+        UrlMapping savedUrl = urlRepository.save(new UrlMapping(longUrl));
         return encode(savedUrl.getId());
     }
 
+    // Caches the literal string URL. Skips DB lookup if present in Redis.
+    @Cacheable(value = "urls", key = "#shortUrl")
     public String getOriginalUrl(String shortUrl) {
         Integer id = decode(shortUrl);
         UrlMapping mapping = urlRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("URL not found"));
         return mapping.getOriginalUrl();
+    }
+
+    // Records the click independently of the cache lookup
+    public void recordClick(String shortUrl) {
+        Integer id = decode(shortUrl);
+        urlRepository.incrementClickCount(id);
+    }
+
+    // Example of Cache Eviction for administrative deletion
+    @CacheEvict(value = "urls", key = "#shortUrl")
+    public void deleteShortUrl(String shortUrl) {
+        Integer id = decode(shortUrl);
+        urlRepository.deleteById(id);
     }
 }

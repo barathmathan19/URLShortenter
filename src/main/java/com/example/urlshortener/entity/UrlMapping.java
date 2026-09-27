@@ -1,9 +1,6 @@
 package com.example.urlshortener.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class UrlMapping {
@@ -31,4 +28,12 @@ public class UrlMapping {
     public void setOriginalUrl(String originalUrl) {
         this.originalUrl = originalUrl;
     }
+
+    // Inside com.example.urlshortener.entity.UrlMapping
+
+    @Column(nullable = false)
+    private Long clickCount = 0L;
+
+    public Long getClickCount() { return clickCount; }
+    public void setClickCount(Long clickCount) { this.clickCount = clickCount; }
 }

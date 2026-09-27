@@ -27,9 +27,17 @@ public class UrlController {
 
     @GetMapping("/{shortUrl}")
     public ResponseEntity<Void> redirect(@PathVariable("shortUrl") String shortUrl) {
+        // 1. Fetch from Redis Cache (or DB if cache miss)
         String originalUrl = urlService.getOriginalUrl(shortUrl);
+
+        // 2. Increment analytics directly in the DB
+        urlService.recordClick(shortUrl);
+
+        // 3. Issue redirect
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(originalUrl))
                 .build();
     }
+
+
 }
