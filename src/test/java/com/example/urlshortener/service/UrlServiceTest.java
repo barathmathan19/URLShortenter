@@ -37,7 +37,7 @@ class UrlServiceTest {
 
     @Test
     void decode_validShortUrl_returnsCorrectId() {
-        Integer id = urlService.decode("100");
+        Long id = urlService.decode("100");
         assertEquals(3844, id);
     }
 
@@ -57,7 +57,7 @@ class UrlServiceTest {
     @Test
     void getOriginalUrl_urlDoesNotExist_throwsRuntimeException() {
         String shortUrl = "invalid";
-        Integer decodedId = urlService.decode(shortUrl);
+        Integer decodedId = Math.toIntExact(urlService.decode(shortUrl));
 
         when(urlRepository.findById(decodedId)).thenReturn(Optional.empty());
 
