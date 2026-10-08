@@ -6,8 +6,7 @@ import jakarta.persistence.*;
 public class UrlMapping {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "url_sep")
-    @SequenceGenerator(name = "url_seq", sequenceName = "url_mapping_sequence", allocationSize = 50)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String originalUrl;

@@ -46,12 +46,12 @@ class UrlServiceTest {
         String shortUrl = "b"; // decode("b") -> ID 11
         UrlMapping mockMapping = new UrlMapping("https://spring.io");
 
-        when(urlRepository.findById(11)).thenReturn(Optional.of(mockMapping));
+        when(urlRepository.findById(11L)).thenReturn(Optional.of(mockMapping));
 
         String result = urlService.getOriginalUrl(shortUrl);
 
         assertEquals("https://spring.io", result);
-        verify(urlRepository, times(1)).findById(11);
+        verify(urlRepository, times(1)).findById(11L);
     }
 
     @Test
@@ -59,12 +59,33 @@ class UrlServiceTest {
         String shortUrl = "invalid";
         Integer decodedId = Math.toIntExact(urlService.decode(shortUrl));
 
-        when(urlRepository.findById(decodedId)).thenReturn(Optional.empty());
+        when(urlRepository.findById(Long.valueOf(decodedId))).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             urlService.getOriginalUrl(shortUrl);
         });
 
         assertEquals("URL not found", exception.getMessage());
+    }
+
+    @Test
+    void getOriginalUrl_urlNotInDatabase_throwsRuntimeException() {
+        String shortUrl = "ValidBase62";
+        long decodedId = urlService.decode(shortUrl);
+
+        when(urlRepository.findById(decodedId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            urlService.getOriginalUrl(shortUrl);
+        });
+        assertEquals("URL not found", exception.getMessage());
+    }
+
+    @Test
+    void decode_invalidCharacters_throwsIllegalArgumentException() {
+        // Contains characters like '-' or '_' not in ALPHABET
+        assertThrows(IllegalArgumentException.class, () -> {
+            urlService.decode("invalid-url!");
+        });
     }
 }

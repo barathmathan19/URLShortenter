@@ -35,17 +35,13 @@ public class UrlService {
 
     // CHANGED TO PUBLIC: Base62 Decoding logic so tests can access it
     public Long decode(String str) {
-        if(str == null || str.trim().isEmpty()){
-            throw new IllegalArgumentException("Input cannot be NULL or empty");
-        }
-
-        if(!STRICT_NUMERIC_ID.matcher(str).matches()){
-            throw new IllegalArgumentException("Input contains invalid characters");
-        }
-
         long id = 0;
-        for (int i = 0; i < str.length(); i++) {
-            id = id * BASE + ALPHABET.indexOf(str.charAt(i));
+        for(int i=0;i<str.length();i++){
+            int index = ALPHABET.indexOf(str.charAt(i));
+            if(index == -1){
+                throw new IllegalArgumentException("Invalid Base62 character");
+            }
+            id =id * BASE + index;
         }
         return id;
     }
@@ -59,7 +55,7 @@ public class UrlService {
     @Cacheable(value = "urls", key = "#shortUrl")
     public String getOriginalUrl(String shortUrl) {
         long id = decode(shortUrl);
-        UrlMapping mapping = urlRepository.findById((int) id)
+        UrlMapping mapping = urlRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("URL not found"));
         return mapping.getOriginalUrl();
     }
@@ -74,6 +70,6 @@ public class UrlService {
     @CacheEvict(value = "urls", key = "#shortUrl")
     public void deleteShortUrl(String shortUrl) {
         long id = decode(shortUrl);
-        urlRepository.deleteById((int) id);
+        urlRepository.deleteById(id);
     }
 }
